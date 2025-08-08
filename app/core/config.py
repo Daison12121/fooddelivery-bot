@@ -2,7 +2,7 @@
 Конфигурация приложения
 """
 
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings
 from typing import List, Optional
 
 
@@ -55,3 +55,4 @@ class Settings(BaseSettings):
 
 # Создание экземпляра настроек
 settings = Settings()
+
