@@ -1,0 +1,217 @@
+﻿import asyncio
+import logging
+import os
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.constants import ParseMode
+
+# Настройка логирования
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+TELEGRAM_BOT_TOKEN = "7942867452:AAHUPUnZaKiH-U90hFdnU4Zr3xPlAMBmEh8"
+
+async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info(f"Получена команда /start от пользователя {update.effective_user.id}")
+    
+    user = update.effective_user
+    
+    keyboard = [
+        [InlineKeyboardButton("🌐 Веб-приложение", url="http://localhost:8080/webapp.html")],
+        [InlineKeyboardButton("📖 API документация", url="http://localhost:8000/docs")],
+        [InlineKeyboardButton("📋 Мои заказы", callback_data="orders_list")],
+        [InlineKeyboardButton("🏪 Рестораны", callback_data="restaurants_list")],
+        [InlineKeyboardButton("ℹ️ Помощь", callback_data="help")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    welcome_text = f"""🍕 *Добро пожаловать в FoodDelivery Bot!*
+
+Привет, {user.first_name}! 👋
+
+Я помогу тебе заказать вкусную еду из лучших ресторанов города.
+
+🚀 *Что доступно:*
+• 🌐 Веб-приложение для заказов
+• 📖 API документация для разработчиков
+• 📱 Интерактивное меню в боте
+• 📍 Отслеживание доставки
+
+Выберите действие из меню ниже! 👇"""
+
+    try:
+        await update.message.reply_text(
+            welcome_text, 
+            parse_mode=ParseMode.MARKDOWN, 
+            reply_markup=reply_markup
+        )
+        logger.info(f"Отправлено приветственное сообщение пользователю {user.id}")
+    except Exception as e:
+        logger.error(f"Ошибка при отправке сообщения: {e}")
+
+async def restaurants_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Обработка запроса ресторанов")
+    query = update.callback_query
+    await query.answer()
+    
+    restaurants_text = """🏪 *Доступные рестораны:*
+
+🍕 **Pizza Palace**
+⭐ 4.8 • 🚚 25-35 мин • 💰 от 500₽
+
+🍔 **Burger King**
+⭐ 4.5 • 🚚 20-30 мин • 💰 от 300₽
+
+🍜 **Суши Мастер**
+⭐ 4.9 • 🚚 30-40 мин • 💰 от 800₽
+
+🥗 **Healthy Food**
+⭐ 4.6 • 🚚 15-25 мин • 💰 от 400₽
+
+💡 *Для полного меню используйте веб-приложение!*"""
+
+    keyboard = [
+        [InlineKeyboardButton("🌐 Открыть веб-приложение", url="http://localhost:8080/webapp.html")],
+        [InlineKeyboardButton("🍕 Pizza Palace", callback_data="restaurant_1")],
+        [InlineKeyboardButton("🍔 Burger King", callback_data="restaurant_2")],
+        [InlineKeyboardButton("🔙 Назад", callback_data="back_to_main")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        restaurants_text, 
+        parse_mode=ParseMode.MARKDOWN, 
+        reply_markup=reply_markup
+    )
+
+async def orders_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Обработка запроса заказов")
+    query = update.callback_query
+    await query.answer()
+    
+    orders_text = """📋 *Мои заказы:*
+
+🟢 **Заказ #1234** - *Доставляется*
+🍕 Pizza Margherita x2
+📍 ул. Пушкина, 10
+⏰ Ожидаемое время: 15 мин
+
+🟡 **Заказ #1233** - *Готовится*
+🍔 Big Burger, 🍟 Картофель фри
+📍 ул. Ленина, 25
+⏰ Ожидаемое время: 25 мин
+
+✅ **Заказ #1232** - *Доставлен*
+🍜 Суши сет "Филадельфия"
+📍 пр. Мира, 15
+⏰ Доставлен вчера в 19:30
+
+💡 *Новые заказы можно оформить через веб-приложение!*"""
+
+    keyboard = [
+        [InlineKeyboardButton("🌐 Сделать новый заказ", url="http://localhost:8080/webapp.html")],
+        [InlineKeyboardButton("📍 Отследить заказ #1234", callback_data="track_1234")],
+        [InlineKeyboardButton("🔙 Назад", callback_data="back_to_main")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        orders_text, 
+        parse_mode=ParseMode.MARKDOWN, 
+        reply_markup=reply_markup
+    )
+
+async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Обработка запроса помощи")
+    query = update.callback_query
+    await query.answer()
+    
+    help_text = """ℹ️ *Помощь по использованию*
+
+🤖 **Как пользоваться:**
+
+1️⃣ **Веб-приложение** (рекомендуется)
+   • Нажмите "🌐 Веб-приложение"
+   • Выберите ресторан и блюда
+   • Оформите заказ онлайн
+
+2️⃣ **Через бота**
+   • Используйте кнопки меню
+   • Просматривайте информацию
+   • Отслеживайте заказы
+
+3️⃣ **API для разработчиков**
+   • Документация: http://localhost:8000/docs
+   • REST API для интеграций
+
+🔗 **Полезные ссылки:**
+• 🌐 Веб-приложение: http://localhost:8080/webapp.html
+• 📖 API документация: http://localhost:8000/docs
+• 📞 Поддержка: @support_bot"""
+
+    keyboard = [
+        [InlineKeyboardButton("🌐 Открыть веб-приложение", url="http://localhost:8080/webapp.html")],
+        [InlineKeyboardButton("🔙 Главное меню", callback_data="back_to_main")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        help_text, 
+        parse_mode=ParseMode.MARKDOWN, 
+        reply_markup=reply_markup
+    )
+
+async def back_to_main_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Возврат в главное меню")
+    query = update.callback_query
+    await query.answer()
+    
+    user = query.from_user
+    
+    keyboard = [
+        [InlineKeyboardButton("🌐 Веб-приложение", url="http://localhost:8080/webapp.html")],
+        [InlineKeyboardButton("📖 API документация", url="http://localhost:8000/docs")],
+        [InlineKeyboardButton("📋 Мои заказы", callback_data="orders_list")],
+        [InlineKeyboardButton("🏪 Рестораны", callback_data="restaurants_list")],
+        [InlineKeyboardButton("ℹ️ Помощь", callback_data="help")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    welcome_text = f"""🍕 *FoodDelivery Bot*
+
+Привет, {user.first_name}! 👋
+
+Выберите действие из меню ниже:"""
+
+    await query.edit_message_text(
+        welcome_text, 
+        parse_mode=ParseMode.MARKDOWN, 
+        reply_markup=reply_markup
+    )
+
+def main():
+    print("🤖 Запуск Telegram бота @FoodDeliveryV8_Bot...")
+    logger.info("Инициализация бота")
+    
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    
+    application.add_handler(CommandHandler("start", start_handler))
+    application.add_handler(CallbackQueryHandler(restaurants_handler, pattern="^restaurants_list$"))
+    application.add_handler(CallbackQueryHandler(orders_handler, pattern="^orders_list$"))
+    application.add_handler(CallbackQueryHandler(help_handler, pattern="^help$"))
+    application.add_handler(CallbackQueryHandler(back_to_main_handler, pattern="^back_to_main$"))
+    
+    logger.info("Бот запущен и готов к работе!")
+    print("✅ Бот @FoodDeliveryV8_Bot успешно запущен!")
+    print("📱 Найдите бота в Telegram: @FoodDeliveryV8_Bot")
+    print("🌐 Веб-приложение: http://localhost:8080/webapp.html")
+    print("📖 API документация: http://localhost:8000/docs")
+    print("⏹️  Для остановки нажмите Ctrl+C")
+    
+    application.run_polling(drop_pending_updates=True)
+
+if __name__ == "__main__":
+    main()
