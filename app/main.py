@@ -5,24 +5,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqladmin import Admin
+
 from contextlib import asynccontextmanager
 import uvicorn
 
 from app.core.config import settings
-from app.core.database import init_db
-
+from app.core.database import engine, init_db
+from app.admin.views import *  # Импорт админ-моделей
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Управление жизненным циклом приложения"""
     # Инициализация при запуске
     await init_db()
-    
     yield
-    
     # Очистка при завершении
     pass
-
 
 # Создание FastAPI приложения
 app = FastAPI(
@@ -41,10 +40,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Статические файлы
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+# Подключение админки
+admin = Admin(app=app, engine=engine)
+admin.add_view(UserAdmin)
+admin.add_view(RestaurantAdmin)
+admin.add_view(MenuItemAdmin)
+admin.add_view(OrderAdmin)
+# Добавь другие модели при необходимости
 
-
+# Маршрут главной страницы
 @app.get("/")
 async def root():
     """Главная страница API"""
@@ -55,7 +59,7 @@ async def root():
         "status": "running"
     }
 
-
+# Маршрут проверки здоровья
 @app.get("/health")
 async def health_check():
     """Проверка здоровья сервиса"""
